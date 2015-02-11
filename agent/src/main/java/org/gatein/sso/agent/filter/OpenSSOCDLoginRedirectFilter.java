@@ -47,6 +47,7 @@ public class OpenSSOCDLoginRedirectFilter extends LoginRedirectFilter
 
    private String openSSORealm;
    private String agentUrl;
+   private boolean isNeedPaddingChar = true;
 
    private Random random = new Random();
    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", new Locale("en"));
@@ -59,6 +60,12 @@ public class OpenSSOCDLoginRedirectFilter extends LoginRedirectFilter
 
       this.openSSORealm = getInitParameter("OpenSSORealm");
       this.agentUrl = getInitParameter("AgentUrl");
+      String needPaddingChar = getInitParameter("NeedPaddingChar");
+      if("false".equalsIgnoreCase(needPaddingChar)) {
+          this.isNeedPaddingChar = false;
+      } else {
+          this.isNeedPaddingChar = true;
+      }
       log.info("Filter configuration: loginUrl=" + loginUrl +
                ", openSSORealm=" + openSSORealm +
                ", agentUrl=" + agentUrl);
@@ -82,8 +89,13 @@ public class OpenSSOCDLoginRedirectFilter extends LoginRedirectFilter
          urlBuilder.append("?realm=").append(openSSORealm);
          urlBuilder.append("&goto=").append(URLEncoder.encode(agentUrl, "UTF-8"));
 
-         // We need to use Realm=g because of bug (or strange behaviour) of OpenAM, which cuts first character of realmName during parsing
-         String providerId = agentUrl + "/?Realm=g" + openSSORealm;
+         String providerId;
+         if(isNeedPaddingChar) {
+             // We need to use Realm=g because of bug (or strange behaviour) of OpenAM, which cuts first character of realmName during parsing
+             providerId = agentUrl + "/?Realm=g" + openSSORealm;
+         } else {
+             providerId = agentUrl + "/?Realm=" + openSSORealm;
+         }
          urlBuilder.append("&ProviderID=").append(URLEncoder.encode(providerId, "UTF-8"));
 
          // Generate random number for parameter "inResponseTo" and save it to session. This ID must be in response message in parameter "inResponseTo"
